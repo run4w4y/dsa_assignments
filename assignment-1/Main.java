@@ -46,6 +46,7 @@ public class Main {
         }
     }
 
+    // solution to the problem "B. Accounting for a café"
     static void second_solution() throws IOException {
         BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
         int n = Integer.parseInt(reader.readLine());
@@ -228,34 +229,30 @@ class ArraySortedList<T extends Comparable<T>> implements SortedList<T> { // imp
     }
 }
 
+// class used in the first problem solution to represent sold items
 class SoldItem implements Comparable<SoldItem> {
-    public String name;
-    public float price;
+    public String name; // name of the item
+    public float price; // price of the item
 
-    public SoldItem(float price, String name) {
+    public SoldItem(float price, String name) { // class constructor
         this.name = name; 
         this.price = price;
     }
 
-    public int compareTo(SoldItem other) {
-        if (price < other.price)
+    public int compareTo(SoldItem other) { // method required by Comparable
+        if (price < other.price) // comparison by price
             return -1;
         if (price > other.price)
             return 1;
         return 0;
-        // return name.compareTo(other.name);
     }
 
-    public static float parsePrice(String s) {
+    public static float parsePrice(String s) { // static method used to cut off the $ sign and parse the string to float
         return Float.parseFloat(s.substring(1));
     }
 
-    public String toString() {
+    public String toString() { // representation of the item as a string
         return String.format("$%.2f %s", price, name);
-    }
-
-    public int hashCode() {
-        return toString().hashCode();
     }
 }
 
@@ -271,104 +268,119 @@ interface Map<K, V> {
 class MapEntry<K, V> {
     public final K key; // key
     public V value; // value
-    public MapEntry<K, V> next; // next entry (needed for collisions) 
+    public MapEntry<K, V> next; // next entry (it's a linked list, we need to use it because of possible collisions) 
 
-    MapEntry(K key, V value, MapEntry<K, V> next) {
+    MapEntry(K key, V value, MapEntry<K, V> next) { // class constuctor, nothing special going on here
         this.key = key;
         this.value = value;
         this.next = next;
     }
 }
 
-// my hashtable implementation
+// hashtable implementation
 class HashTable<K, V> implements Map<K, V> {
-    private static final int DEFAULT_CAPACITY = 32768;
-    private final int capacity;
-    private int size_;
-    private MapEntry<K, V> array[];
+    private static final int DEFAULT_CAPACITY = 32768; // default capacity of the hashtable
+    private final int capacity; // capacity of the hashtable instance
+    private int size_; // size (amount of key-value pairs) of the hashtable
+    private MapEntry<K, V> array[]; // internal array with entries
 
-    HashTable() {
+    HashTable() { // class constructor using default capacity
         this(DEFAULT_CAPACITY);
     }
 
-    HashTable(int capacity) {
+    HashTable(int capacity) { // class constructor using capacity given as an argument
         this.capacity = capacity;
         array = new MapEntry[capacity];
     }
 
-    int getHash(Object o) {
+    private int getHash(Object o) { // function used to get a valid index in the internal array by hash of an object
         int h = o.hashCode();
         return (h ^ (h >>> 16)) & (capacity - 1);
     }
 
-    public V get(K key) {
+    // time complexity: same as the put method
+    public V get(K key) { // return value by key
         int index = getHash(key);
-        MapEntry<K, V> entry = array[index];
+        MapEntry<K, V> entry = array[index]; // get the first entry at the index we got by hash
         
-        if (entry == null)
-            return null;
+        if (entry == null) // if there's no entry by this index, there's no such key in the map
+            return null; // meaning that we return null
 
-        do {
-            if (entry.key.equals(key))
-                return entry.value;
+        do { // go through the linked list
+            if (entry.key.equals(key)) // check if the linked list node has the same key as the one we are looking for
+                return entry.value; // if it does, return the value, we are done 
 
-            entry = entry.next;
+            entry = entry.next; // if it doesn't, we go on to the next node in the linked list
         } while (entry != null);
     
+        // if we got to this point, it means that there was no node found with such a key, meaning that we should return null
         return null;
     }
 
-    public void put(K key, V value) {
+    // worst case time complexity: O(n)
+    // amortized time complexity: O(1) 
+    // NOTE: time complexity actually heavily depends on how many collisions there are, what is their distribution 
+    //       and what's the ratio size/capacity, but in most cases i believe it should be O(1)
+    public void put(K key, V value) { // put a key-value pair in the map
         int index = getHash(key);
-        MapEntry<K, V> new_entry = new MapEntry(key, value, null);
-        MapEntry<K, V> current_entry = array[index];
+        MapEntry<K, V> new_entry = new MapEntry(key, value, null); // create a new entry, corresponding to the key-value pair we got
+        MapEntry<K, V> current_entry = array[index]; // first entry by the index we got
 
-        if (current_entry == null) {
-            array[index] = new_entry;
+        if (current_entry == null) { // if there's no entry with such an index
+            array[index] = new_entry; // we just place our new entry there and we are done
             size_++;
             return;
         } 
 
-        if (current_entry.next == null) {
-            if (current_entry.key.equals(key)) {
-                current_entry.value = value;
+        // if there acutally is such an entry
+        if (current_entry.next == null) { // check if it's the only node in the linked list
+            if (current_entry.key.equals(key)) { // if it is, and has the same key
+                current_entry.value = value; // we update the value and we are done
                 return;
             }
 
-            current_entry.next = new_entry;
+            current_entry.next = new_entry; // if it's got a different key, we place it to the back of the linked list
             size_++;
             return;
         }
 
-        do {
-            if (current_entry.key.equals(key)) {
-                current_entry.value = value;
+        do { // now, if the entry wasn't the only node in the linked list, we go through all of the list nodes
+            if (current_entry.key.equals(key)) { // and look for a node with the same key
+                current_entry.value = value; // if we find such a node, we update the value and we are done
                 return;
             }
 
             current_entry = current_entry.next;
         } while (current_entry.next != null);
 
+        // if we couldn't find a node with the same key, we just place the new one to the end of the linked list
         current_entry.next = new_entry;
         size_++;
     }
 
-    public int size() {
+    // time complexity: O(1)
+    public int size() { // amount of key value pair in the map
         return size_;
     }
 
+    // NOTE: once again, List interface and ArrayList from java.util are used here, although they do not have any
+    //       direct effect on the data structure itself. i'm using it to keep things similar to how they were in the
+    //       ArraySortedList data structure I implemented earlier. another reason is that it's a big pain to deal with
+    //       arrays of generic parameter types in java, since generic parameters do not exist in the runtime.
+    // time complexity: O(n) where n - the number of key-value pairs in the map
     public List<K> getKeys() {
-        List<K> res = new ArrayList();
-        int count = 0;
+        List<K> res = new ArrayList(); // create the resulting list
+        int count = 0; // keep the count of how many keys have we found so far
 
-        for (int i = 0; count < size_; ++i) {
-            MapEntry<K, V> entry = array[i];
+        for (int i = 0; count < size_; ++i) { // go through the internal array till we find all the keys
+            MapEntry<K, V> entry = array[i]; // current entry
 
-            if (entry == null)
+            if (entry == null) // if there's no entry at the current index we go on to the next one
                 continue;
             
-            do {
-                res.add(entry.key);
+            // if there is an entry 
+            do { // go through the entire linked list
+                res.add(entry.key); // and add all of the keys to the resulting list
                 count++;
                 entry = entry.next;
             } while (entry != null);
