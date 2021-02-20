@@ -46,8 +46,50 @@ public class Main {
         }
     }
 
+    static void second_solution() throws IOException {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+        int n = Integer.parseInt(reader.readLine());
+        HashTable<String, HashTable<String, Float>> accounting = new HashTable(n);
+
+        for (int i = 0; i < n; ++i) {
+            String[] s = reader.readLine().split(" ", 5);
+            String date = s[0];
+            String receipt_id = s[2];
+            float price = SoldItem.parsePrice(s[3]);
+            
+            HashTable<String, Float> existing = accounting.get(date);
+            
+            if (existing == null) {
+                HashTable<String, Float> receipts = new HashTable(n);
+                receipts.put(receipt_id, price);
+                accounting.put(date, receipts);
+                continue;
+            }
+
+            Float receipt = existing.get(receipt_id);
+            
+            if (receipt == null) {
+                existing.put(receipt_id, price);
+                continue;
+            }
+
+            existing.put(receipt_id, receipt + price);
+        }
+
+        List<String> dates = accounting.getKeys();
+        for (int i = 0; i < dates.size(); ++i) { 
+            HashTable<String, Float> receipts = accounting.get(dates.get(i));
+            List<String> ids = receipts.getKeys();
+            float sum = 0;
+            for (int j = 0; j < ids.size(); ++j)
+                sum += receipts.get(ids.get(j));
+            
+            System.out.println(String.format("%s $%.2f %d", dates.get(i), sum, ids.size()));
+        }
+    }
+
     public static void main(String[] args) throws IOException {
-        first_solution();
+        second_solution();
     }
 }
 
@@ -64,6 +106,7 @@ interface SortedList<T extends Comparable<T>> {
     boolean isEmpty(); // return whether the list is empty
 }
 
+// my sorted list implementation
 class ArraySortedList<T extends Comparable<T>> implements SortedList<T> { // implementation of the SortedList interface
     private static final int DEFAULT_CAPACITY = 1; // default capacity of the underlying array
     private int size_ = 0; // the variable to keep track of the actual size of the list
@@ -127,6 +170,8 @@ class ArraySortedList<T extends Comparable<T>> implements SortedList<T> { // imp
     }
 
     // time complexity: O(n) where n - size of the list
+    // NOTE: I'm aware that it can be implemented using binary search, so the time complexity would be O(logn), but O(n) was
+    //       enough to solve the problem, so I didn't bother
     public int indexOf(T element) { // return the index of an element (in a sorted sequence)
         for (int i = 0; i < size_; ++i) { // look through all the elements 
             if (((T) array[i]).compareTo(element) == 0) // check if i-th element equals to the one we need to find
@@ -156,6 +201,7 @@ class ArraySortedList<T extends Comparable<T>> implements SortedList<T> { // imp
     //       because that's required by the interface provided in the assignment description. Usage of ArrayList does not affect 
     //       the ADT itself anyhow.
     // time complexity: O(n) where n - size of the list
+    // NOTE: I believe it can be implemented differently with time complexity of O(logn), but O(n) was enough to solve the problem
     public List<T> searchRange(T from, T to) {
         int position = 0; // position of the current element
         ArrayList<T> res = new ArrayList(); // the list we return as the result
@@ -207,4 +253,121 @@ class SoldItem implements Comparable<SoldItem> {
     public String toString() {
         return String.format("$%.2f %s", price, name);
     }
+
+    public int hashCode() {
+        return toString().hashCode();
+    }
+}
+
+// Map interface required by the assignment description
+interface Map<K, V> {
+    int size();  // return the amount of key-value pairs in the map
+    void put(K key, V value); // add the key-value pair to the map, return true if successful, false otherwise
+    V get(K key); // return value by key, if there's no such key in the map, return null
+    List<K> getKeys(); // return all the keys in the map
+}
+
+// class for usage within HashTable
+class MapEntry<K, V> {
+    public final K key; // key
+    public V value; // value
+    public MapEntry<K, V> next; // next entry (needed for collisions) 
+
+    MapEntry(K key, V value, MapEntry<K, V> next) {
+        this.key = key;
+        this.value = value;
+        this.next = next;
+    }
+}
+
+// my hashtable implementation
+class HashTable<K, V> implements Map<K, V> {
+    private static final int DEFAULT_CAPACITY = 20;
+    private final int capacity;
+    private int size_;
+    private MapEntry<K, V> array[];
+
+    HashTable() {
+        this(DEFAULT_CAPACITY);
+    }
+
+    HashTable(int capacity) {
+        this.capacity = capacity;
+        array = new MapEntry[capacity];
+    }
+
+    int getHash(Object o) {
+        return Math.abs(o.hashCode() % capacity);
+    }
+
+    public V get(K key) {
+        int index = getHash(key);
+        MapEntry<K, V> entry = array[index];
+        
+        if (entry == null)
+            return null;
+
+        do {
+            if (entry.key.equals(key))
+                return entry.value;
+
+            entry = entry.next;
+        } while (entry != null);
+    
+        return null;
+    }
+
+    public void put(K key, V value) {
+        int index = getHash(key);
+        MapEntry<K, V> new_entry = new MapEntry(key, value, null);
+        MapEntry<K, V> current_entry = array[index];
+
+        if (current_entry == null) {
+            array[index] = new_entry;
+            size_++;
+            return;
+        } 
+
+        if (current_entry.next == null) {
+            current_entry.next = new_entry;
+            size_++;
+            return;
+        }
+
+        do {
+            if (current_entry.key.equals(key)) {
+                current_entry.value = value;
+                return;
+            }
+
+            current_entry = current_entry.next;
+        } while (current_entry.next != null);
+
+        current_entry.next = new_entry;
+        size_++;
+    }
+
+    public int size() {
+        return size_;
+    }
+
+    public List<K> getKeys() {
+        List<K> res = new ArrayList();
+        int count = 0;
+
+        for (int i = 0; count < size_; ++i) {
+            MapEntry<K, V> entry = array[i];
+
+            if (entry == null)
+                continue;
+            
+            do {
+                res.add(entry.key);
+                count++;
+                entry = entry.next;
+            } while (entry != null);
+        }
+
+        return res;
+    } 
 }
