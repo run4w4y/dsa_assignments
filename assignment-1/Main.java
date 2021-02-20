@@ -1,13 +1,55 @@
+// Author: Vadim Makarov
+// University e-mail: va.makarov@innopolis.university
+
 import java.util.List; // need it for the searchRange method 
-import java.util.ArrayList; // need it for the return statement in the searchRange method
+import java.util.ArrayList; //  need it for the return statement in the searchRange method
 import java.io.*; // need it for IO
 
-// TEST
-// 3
-// ADD $4.0 n
-// ADD $5.7 a
-// LIST $0 $10
 
+public class Main {
+    // solution to the problem "A. Managing Pawn Shop Items"
+    static void first_solution() throws IOException {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+        int n = Integer.parseInt(reader.readLine());
+        ArraySortedList<SoldItem> list = new ArraySortedList();
+
+        for (int i = 0; i < n; ++i) {
+            String[] s = reader.readLine().split(" ", 3);
+            
+            switch (s[0]) {
+                case "ADD": {
+                    float price = SoldItem.parsePrice(s[1]);
+                    String name = s[2];
+                    list.add(new SoldItem(price, name));
+                    break;
+                }
+                case "REMOVE": {
+                    float price = SoldItem.parsePrice(s[1]);
+                    String name = s[2];
+                    int index = list.indexOf(new SoldItem(price, name));
+                    list.remove(index);
+                    break;
+                }
+                case "LIST": {
+                    float price1 = SoldItem.parsePrice(s[1]);
+                    float price2 = SoldItem.parsePrice(s[2]);
+                    List<SoldItem> items = list.searchRange(new SoldItem(price1, ""), new SoldItem(price2, ""));
+                    ArrayList<String> item_strings = new ArrayList();
+                    items.forEach(item -> item_strings.add(item.toString()));
+                    System.out.println(String.join(", ", item_strings));
+                    break;
+                }
+                default: {
+                    throw new IOException(String.format("Got unknown command %s", s[0]));
+                }
+            }
+        }
+    }
+
+    public static void main(String[] args) throws IOException {
+        first_solution();
+    }
+}
 
 // SortedList interface provided in the assignment description
 interface SortedList<T extends Comparable<T>> {
@@ -39,6 +81,7 @@ class ArraySortedList<T extends Comparable<T>> implements SortedList<T> { // imp
         array = new_array; // use array with bigger capacity from now on
     }
 
+    // time coplexity: O(n) where n - size of the list
     public void add(T item) { // add a new item to the list
         if (size_ == array.length) // if we are about to run out of capacity of the array
             expandCapacity(); // we extend the capacity
@@ -56,12 +99,14 @@ class ArraySortedList<T extends Comparable<T>> implements SortedList<T> { // imp
         size_++;
     }
 
+    // time complexity: O(1)
     public T least() { // return the least element
         if (this.isEmpty()) // check if the list is empty
             throw new IllegalStateException("Cannot call ArraySortedList.least method on an empty list"); // if it is, throw an exception
         return (T) array[0]; // the least element will basically be the first one in the underlying array, so we return it 
     }
 
+    // time complexity: O(1)
     public T greatest() { // return the greatest element
         if (this.isEmpty()) // check if the list is empty
             throw new IllegalStateException("Cannot call ArraySortedList.greatest method on an empty list"); // if it is, throw an exception
@@ -75,19 +120,22 @@ class ArraySortedList<T extends Comparable<T>> implements SortedList<T> { // imp
             ));
     }
 
+    // time complexity: O(1)
     public T get(int index) { // return the i-th least element
         checkIndexValidity(index);
         return (T) array[index]; // return the needed element
     }
 
+    // time complexity: O(n) where n - size of the list
     public int indexOf(T element) { // return the index of an element (in a sorted sequence)
         for (int i = 0; i < size_; ++i) { // look through all the elements 
-            if (array[i].equals(element)) // check if i-th element equals to the one we need to find
+            if (((T) array[i]).compareTo(element) == 0) // check if i-th element equals to the one we need to find
                 return i; // if it is return the current index
         }
         return -1; // return -1 if element was not found in the list
     }
 
+    // time complexity: O(n) where n - size of the list
     public void remove(int index) { // remove the element at a given index from the list
         checkIndexValidity(index);
 
@@ -100,34 +148,35 @@ class ArraySortedList<T extends Comparable<T>> implements SortedList<T> { // imp
         for (int i = index; i < size_ - 1; ++i) { 
             array[i] = array[i + 1];
         }
+        array[size_ - 1] = null;
+        size_--;
     }
 
     // NOTE: ArrayList is used in this method just to be able to return an instance of a class that implements the List interface, 
     //       because that's required by the interface provided in the assignment description. Usage of ArrayList does not affect 
     //       the ADT itself anyhow.
+    // time complexity: O(n) where n - size of the list
     public List<T> searchRange(T from, T to) {
         int position = 0; // position of the current element
-        ArrayList<T> res = new ArrayList<T>(); // the list we return as the result
+        ArrayList<T> res = new ArrayList(); // the list we return as the result
         
         // look for the position to start adding elements to the result list from
-        while (position < size_ && ((T) array[position++]).compareTo(from) < 0) {
-            System.out.print(array[position - 1].toString() + " ");
-            System.out.println(((T) array[position - 1]).compareTo(from));
-        }
+        while (position < size_ && ((T) array[position++]).compareTo(from) < 0);
+        position--;
 
         // add all the needed elements to the resulting list
-        while (position < size_ && ((T) array[position]).compareTo(to) >= 0) { 
-            System.out.println(array[position].toString());
+        while (position < size_ && ((T) array[position]).compareTo(to) <= 0)
             res.add((T) array[position++]);
-        }
 
         return res;
     }
 
+    // time complexity: O(1)
     public int size() { // return the size of the list
         return size_; // just return the value of a private class member
     }
 
+    // time complexity: O(1)
     public boolean isEmpty() { // check if the list is empty
         return size_ == 0; // the list will be empty if the size of it is 0
     }
@@ -157,45 +206,5 @@ class SoldItem implements Comparable<SoldItem> {
 
     public String toString() {
         return String.format("$%.2f %s", price, name);
-    }
-}
-
-class Main {
-    static void first_solution() throws IOException {
-        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-        int n = Integer.parseInt(reader.readLine());
-        ArraySortedList<SoldItem> list = new ArraySortedList();
-
-        for (int i = 0; i < n; ++i) {
-            String[] s = reader.readLine().split(" ", 3);
-            
-            switch (s[0]) {
-                case "ADD": {
-                    float price = SoldItem.parsePrice(s[1]);
-                    String name = s[2];
-                    list.add(new SoldItem(price, name));
-                    break;
-                }
-                case "REMOVE": {
-                    float price = SoldItem.parsePrice(s[1]);
-                    String name = s[2];
-                    int index = list.indexOf(new SoldItem(price, name));
-                    list.remove(index);
-                    break;
-                }
-                default: { // LIST
-                    float price1 = SoldItem.parsePrice(s[1]);
-                    float price2 = SoldItem.parsePrice(s[2]);
-                    List<SoldItem> items = list.searchRange(new SoldItem(price1, ""), new SoldItem(price2, ""));
-                    ArrayList<String> item_strings = new ArrayList();
-                    items.forEach(item -> item_strings.add(item.toString()));
-                    System.out.println(String.join(", ", item_strings));
-                }
-            }
-        }
-    }
-
-    public static void main(String[] args) throws IOException {
-        first_solution();
     }
 }
