@@ -49,7 +49,7 @@ public class Main {
     static void second_solution() throws IOException {
         BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
         int n = Integer.parseInt(reader.readLine());
-        HashTable<String, HashTable<String, Float>> accounting = new HashTable(n);
+        HashTable<String, HashTable<String, Float>> accounting = new HashTable();
 
         for (int i = 0; i < n; ++i) {
             String[] s = reader.readLine().split(" ", 5);
@@ -60,7 +60,7 @@ public class Main {
             HashTable<String, Float> existing = accounting.get(date);
             
             if (existing == null) {
-                HashTable<String, Float> receipts = new HashTable(n);
+                HashTable<String, Float> receipts = new HashTable();
                 receipts.put(receipt_id, price);
                 accounting.put(date, receipts);
                 continue;
@@ -282,7 +282,7 @@ class MapEntry<K, V> {
 
 // my hashtable implementation
 class HashTable<K, V> implements Map<K, V> {
-    private static final int DEFAULT_CAPACITY = 20;
+    private static final int DEFAULT_CAPACITY = 32768;
     private final int capacity;
     private int size_;
     private MapEntry<K, V> array[];
@@ -297,7 +297,8 @@ class HashTable<K, V> implements Map<K, V> {
     }
 
     int getHash(Object o) {
-        return Math.abs(o.hashCode() % capacity);
+        int h = o.hashCode();
+        return (h ^ (h >>> 16)) & (capacity - 1);
     }
 
     public V get(K key) {
@@ -329,6 +330,11 @@ class HashTable<K, V> implements Map<K, V> {
         } 
 
         if (current_entry.next == null) {
+            if (current_entry.key.equals(key)) {
+                current_entry.value = value;
+                return;
+            }
+
             current_entry.next = new_entry;
             size_++;
             return;
