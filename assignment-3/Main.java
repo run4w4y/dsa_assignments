@@ -92,7 +92,7 @@ public class Main {
         firstSolution(); // basically the same as the first solution
     }
 
-    static void thirdSolution() throws IOException {
+    static void thirdSolution() throws IOException { // O(n^2logn)
         BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
         String line = reader.readLine();
         String s[] = line.split(" ");
@@ -243,7 +243,7 @@ class AdjacencyMatrixGraph<K extends Comparable<K>, V extends Comparable<V>> imp
         size = 0;
     }
 
-    public Vertex<V> addVertex(V value) {
+    public Vertex<V> addVertex(V value) { // O(n)
         if (vertexFromValue.containsKey(value))
             return vertexFromValue.get(value);
         
@@ -256,7 +256,7 @@ class AdjacencyMatrixGraph<K extends Comparable<K>, V extends Comparable<V>> imp
         return v;
     }
 
-    public void removeVertex(Vertex<V> v) {
+    public void removeVertex(Vertex<V> v) { // O(n^2)
         if (!vertexFromValue.containsKey(v.value))
             return;
         
@@ -274,17 +274,17 @@ class AdjacencyMatrixGraph<K extends Comparable<K>, V extends Comparable<V>> imp
         }
     }
 
-    public Edge<K, V> addEdge(Vertex<V> from, Vertex<V> to, K weight) {
+    public Edge<K, V> addEdge(Vertex<V> from, Vertex<V> to, K weight) { // O(1)
         Edge<K, V> e = new Edge<>(from, to, weight);
         matrix.get(from.count).set(to.count, e);
         return e;
     }
 
-    public void removeEdge(Edge<K, V> e) {
+    public void removeEdge(Edge<K, V> e) { // O(1)
         matrix.get(e.from.count).set(e.to.count, null);
     }
 
-    public List<Edge<K, V>> edgesFrom(Vertex<V> v) {
+    public List<Edge<K, V>> edgesFrom(Vertex<V> v) { // O(n)
         return matrix
             .get(v.count)
             .stream()
@@ -292,7 +292,7 @@ class AdjacencyMatrixGraph<K extends Comparable<K>, V extends Comparable<V>> imp
             .collect(Collectors.toList());
     }
 
-    public List<Edge<K, V>> edgesTo(Vertex<V> v) {
+    public List<Edge<K, V>> edgesTo(Vertex<V> v) { // O(n)
         return matrix
             .stream()
             .map(x -> x.get(v.count))
@@ -300,19 +300,19 @@ class AdjacencyMatrixGraph<K extends Comparable<K>, V extends Comparable<V>> imp
             .collect(Collectors.toList());
     }
 
-    public Vertex<V> findVertex(V value) {
+    public Vertex<V> findVertex(V value) { // O(1)
         return vertexFromValue.get(value);
     }
 
-    public Edge<K, V> findEdge(V from_value, V to_value) {
+    public Edge<K, V> findEdge(V from_value, V to_value) { // O(1)
         return matrix.get(findVertex(from_value).count).get(findVertex(to_value).count);
     }
 
-    public boolean hasEdge(Vertex<V> v, Vertex<V> u) {
+    public boolean hasEdge(Vertex<V> v, Vertex<V> u) { // O(1)
         return !Objects.isNull(matrix.get(v.count).get(u.count));
     }
 
-    public void transpose() {
+    public void transpose() { // O(n^2)
         for (int i = 0; i < size; i++)
             for (int j = 0; j < i; j++) {
                 Edge<K, V> e1 = matrix.get(i).get(j);
@@ -370,7 +370,8 @@ class AdjacencyMatrixGraph<K extends Comparable<K>, V extends Comparable<V>> imp
     }
 
     // returns null if no cycle was found
-    public List<Edge<K, V>> isAcyclic() { // would be better if it was named findCycle
+    // would be better if it was named findCycle
+    public List<Edge<K, V>> isAcyclic() {  // O(n^2)
         ArrayList<Boolean> used = new ArrayList<>();
         
         for (int i = 0; i < size; ++i) 
